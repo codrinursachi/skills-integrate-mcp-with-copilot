@@ -1,3 +1,15 @@
+/* Activity controls (search/filter/sort) */
+#activity-controls {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 1em;
+  flex-wrap: wrap;
+}
+#activity-controls input[type="text"],
+#activity-controls select {
+  padding: 0.4em 0.7em;
+  font-size: 1em;
+}
 * {
   box-sizing: border-box;
   margin: 0;
