@@ -8,17 +8,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const categoryFilter = document.getElementById("category-filter");
   const sortSelect = document.getElementById("sort-select");
 
-  // Demo: Map activity names to categories (in real app, this should come from backend)
-  const activityCategories = {
-    "Chess Club": "Academics",
-    "Programming Class": "Academics",
-    "Gym Class": "Sports",
-    "Soccer Team": "Sports",
-    "Basketball Team": "Sports",
-    "Art Club": "Arts",
-    "Drama Club": "Arts"
-    // Add more as needed
-  };
+  // Store activities in module scope (not global)
+  let allActivities = {};
+
+  // Debounce timer for search input
+  let searchDebounceTimer = null;
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -26,8 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/activities");
       const activities = await response.json();
 
-      // Store activities for filtering/sorting
-      window._allActivities = activities;
+      // Store activities in module scope
+      allActivities = activities;
       renderActivities();
     } catch (error) {
       activitiesList.innerHTML =
@@ -38,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render activities with current filters/sort
   function renderActivities() {
-    const activities = window._allActivities || {};
+    const activities = allActivities || {};
     let entries = Object.entries(activities);
 
     // Filter by search
@@ -53,7 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Filter by category
     const cat = categoryFilter?.value;
     if (cat) {
-      entries = entries.filter(([name]) => activityCategories[name] === cat);
+      entries = entries.filter(([name, details]) => {
+        const activityCategory = details.category || "Other";
+        return activityCategory === cat;
+      });
     }
 
     // Sort
@@ -94,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <h4>${name}</h4>
         <p>${details.description}</p>
         <p><strong>Schedule:</strong> ${details.schedule}</p>
-        <p><strong>Category:</strong> ${activityCategories[name] || "Other"}</p>
+        <p><strong>Category:</strong> ${details.category || "Other"}</p>
         <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
         <div class="participants-container">
           ${participantsHTML}
@@ -203,7 +200,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Add listeners for controls
-  if (searchBox) searchBox.addEventListener("input", renderActivities);
+  if (searchBox) {
+    searchBox.addEventListener("input", () => {
+      // Clear existing debounce timer
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+      // Set new debounce timer (300ms delay)
+      searchDebounceTimer = setTimeout(() => {
+        renderActivities();
+      }, 300);
+    });
+  }
   if (categoryFilter) categoryFilter.addEventListener("change", renderActivities);
   if (sortSelect) sortSelect.addEventListener("change", renderActivities);
 
